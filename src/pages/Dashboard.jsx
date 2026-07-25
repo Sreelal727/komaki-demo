@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell,
@@ -6,7 +7,7 @@ import {
 import { useStore } from '../lib/store.jsx'
 import { computeInsights } from '../lib/insights.js'
 import { monthlyTrend, purchaseOrders, outlets, vehicles as allVehicles, sales as allSales } from '../data/db.js'
-import { PageHeader, Stat, SectionCard, Table, StatusBadge, Money, Icon, Badge } from '../components/ui.jsx'
+import { PageHeader, Stat, SectionCard, Table, StatusBadge, Money, Icon, Badge, Modal, Breakdown } from '../components/ui.jsx'
 import { SaigaMark } from './Saiga.jsx'
 
 // Vibrant categorical palette — distinct hues, readable on white.
@@ -15,7 +16,9 @@ const tip = { contentStyle: { borderRadius: 12, border: '1px solid #eceef2', fon
 
 export default function Dashboard() {
   const store = useStore()
-  const { user, hq, scope, vehicles, sales, spares, accessories, compliments } = store
+  const nav = useNavigate()
+  const [modal, setModal] = useState(null)
+  const { user, hq, scope, vehicles, sales, spares, accessories, compliments, setViewOutlet } = store
 
   const inStock = vehicles.filter((v) => v.status === 'In Stock')
   const sold = vehicles.filter((v) => v.status === 'Sold')
@@ -57,6 +60,65 @@ export default function Dashboard() {
 
   const insights = computeInsights(store).slice(0, 3)
 
+  // ---- KPI drill-down content -------------------------------------------
+  const lowItems = [...spares, ...accessories].filter((i) => i.status !== 'OK')
+  const inStockByModel = {}
+  inStock.forEach((v) => {
+    const e = inStockByModel[v.model] || (inStockByModel[v.model] = { count: 0, value: 0 })
+    e.count++; e.value += v.price
+  })
+  const soldByModel = {}
+  sales.forEach((s) => { soldByModel[s.model] = (soldByModel[s.model] || 0) + 1 })
+  const giftsByType = {}
+  compliments.forEach((c) => { giftsByType[c.name] = (giftsByType[c.name] || 0) + c.issued })
+
+  const fmt = (n) => '₹' + Number(n).toLocaleString('en-IN')
+  const MODALS = {
+    stock: {
+      title: 'Vehicles in stock', subtitle: `${inStock.length} units · ${scopeLabel}`,
+      body: <Breakdown items={Object.entries(inStockByModel).sort((a, b) => b[1].count - a[1].count)
+        .map(([m, e]) => ({ label: m, value: e.count, display: `${e.count} units · ${fmt(e.value)}` }))} />,
+    },
+    value: {
+      title: 'Stock value by category', subtitle: `${fmt(stockValue + invValue.slice(1).reduce((s, i) => s + i.value, 0))} total on hand`,
+      body: <Breakdown items={invValue.map((i) => ({ label: i.name, value: i.value, display: fmt(i.value) }))} />,
+    },
+    revenue: {
+      title: consolidated ? 'Revenue by outlet' : 'Revenue by model', subtitle: `${fmt(revenue)} this period`,
+      body: <Breakdown items={[...revBar].sort((a, b) => b.value - a.value).map((r) => ({ label: r.name, value: r.value, display: fmt(r.value) }))} />,
+    },
+    low: {
+      title: 'Low & out-of-stock items', subtitle: `${lowItems.length} SKUs need attention`,
+      body: (
+        <Table columns={['Item', 'Qty', 'Reorder @', 'Status']} rows={lowItems}
+          renderRow={(i) => (
+            <tr key={i.id}><td className="td font-medium text-ink-800">{i.name}</td><td className="td">{i.qty}</td>
+              <td className="td text-ink-400">{i.reorderLevel}</td><td className="td"><StatusBadge status={i.status} /></td></tr>
+          )} />
+      ),
+    },
+    attach: {
+      title: 'Accessory attach rate', subtitle: `${attach}% of ${sales.length} sales carried accessories`,
+      body: <Breakdown items={[
+        { label: 'Sales with accessories', value: withAcc, display: withAcc },
+        { label: 'Vehicle-only sales', value: sales.length - withAcc, display: sales.length - withAcc },
+      ]} />,
+    },
+    ticket: {
+      title: 'Average ticket size', subtitle: `${fmt(avgTicket)} per invoice`,
+      body: <Breakdown items={[...sales].sort((a, b) => b.total - a.total).slice(0, 8)
+        .map((s) => ({ label: `${s.model} · ${s.customer}`, value: s.total, display: fmt(s.total) }))} />,
+    },
+    gifts: {
+      title: 'Free gifts issued', subtitle: `${compliments.reduce((s, c) => s + c.issued, 0)} items given away`,
+      body: <Breakdown items={Object.entries(giftsByType).sort((a, b) => b[1] - a[1]).map(([n, v]) => ({ label: n, value: v, display: v }))} />,
+    },
+    units: {
+      title: 'Units sold by model', subtitle: `${sales.length} vehicles this period`,
+      body: <Breakdown items={Object.entries(soldByModel).sort((a, b) => b[1] - a[1]).map(([m, v]) => ({ label: m, value: v, display: `${v} units` }))} />,
+    },
+  }
+
   return (
     <div>
       <PageHeader
@@ -68,10 +130,10 @@ export default function Dashboard() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Stat icon="scooter" label="Vehicles in stock" value={inStock.length} sub={`${sold.length} sold this period`} tone="blue" />
-        <Stat icon="tag" label="Stock value" value={<Money value={stockValue} />} sub="unsold inventory" tone="violet" />
-        <Stat icon="receipt" label="Revenue (period)" value={<Money value={revenue} />} trend="+11% vs last month" tone="green" />
-        <Stat icon="alert" label="Low / out of stock" value={lowStock} sub={`${pendingPO} POs pending`} tone={lowStock > 0 ? 'amber' : 'green'} />
+        <Stat icon="scooter" label="Vehicles in stock" value={inStock.length} sub={`${sold.length} sold this period`} tone="blue" onClick={() => setModal('stock')} />
+        <Stat icon="tag" label="Stock value" value={<Money value={stockValue} />} sub="unsold inventory" tone="violet" onClick={() => setModal('value')} />
+        <Stat icon="receipt" label="Revenue (period)" value={<Money value={revenue} />} trend="+11% vs last month" tone="green" onClick={() => setModal('revenue')} />
+        <Stat icon="alert" label="Low / out of stock" value={lowStock} sub={`${pendingPO} POs pending`} tone={lowStock > 0 ? 'amber' : 'green'} onClick={() => setModal('low')} />
       </div>
 
       {/* Saiga highlights */}
@@ -101,15 +163,15 @@ export default function Dashboard() {
 
       {/* Secondary KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Stat icon="tag" label="Accessory attach rate" value={attach + '%'} sub="of vehicle sales" tone={attach < 55 ? 'amber' : 'green'} />
-        <Stat icon="receipt" label="Avg ticket size" value={<Money value={avgTicket} />} tone="blue" />
-        <Stat icon="gift" label="Free gifts issued" value={compliments.reduce((s, c) => s + c.issued, 0)} tone="violet" />
-        <Stat icon="swap" label="Units sold" value={sales.length} tone="blue" />
+        <Stat icon="tag" label="Accessory attach rate" value={attach + '%'} sub="of vehicle sales" tone={attach < 55 ? 'amber' : 'green'} onClick={() => setModal('attach')} />
+        <Stat icon="receipt" label="Avg ticket size" value={<Money value={avgTicket} />} tone="blue" onClick={() => setModal('ticket')} />
+        <Stat icon="gift" label="Free gifts issued" value={compliments.reduce((s, c) => s + c.issued, 0)} tone="violet" onClick={() => setModal('gifts')} />
+        <Stat icon="swap" label="Units sold" value={sales.length} tone="blue" onClick={() => setModal('units')} />
       </div>
 
       {/* Charts row A */}
       <div className="grid lg:grid-cols-3 gap-6 mb-6">
-        <SectionCard title="Sales & revenue trend" className="lg:col-span-2">
+        <SectionCard title="Sales & revenue trend" className="lg:col-span-2" onClick={() => nav('/reports')}>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={monthlyTrend} margin={{ left: -18, right: 8, top: 8 }}>
               <defs>
@@ -127,7 +189,7 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </SectionCard>
 
-        <SectionCard title="Inventory mix">
+        <SectionCard title="Inventory mix" onClick={() => nav('/vehicles')}>
           <Donut data={seg} />
           <Legend data={seg} />
         </SectionCard>
@@ -135,7 +197,7 @@ export default function Dashboard() {
 
       {/* Charts row B */}
       <div className="grid lg:grid-cols-3 gap-6 mb-6">
-        <SectionCard title={consolidated ? 'Revenue by outlet' : 'Revenue by model'} className="lg:col-span-2">
+        <SectionCard title={consolidated ? 'Revenue by outlet' : 'Revenue by model'} className="lg:col-span-2" onClick={() => nav('/reports')}>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={revBar} margin={{ left: -6, right: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#eceef2" vertical={false} />
@@ -149,14 +211,14 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </SectionCard>
 
-        <SectionCard title="Sales by model">
+        <SectionCard title="Sales by model" onClick={() => nav('/reports')}>
           <Donut data={byModel} />
           <Legend data={byModel} />
         </SectionCard>
       </div>
 
       {/* Inventory value by category */}
-      <SectionCard title="Inventory value by category" className="mb-6">
+      <SectionCard title="Inventory value by category" className="mb-6" onClick={() => nav('/vehicles')}>
         <div className="space-y-3">
           {invValue.map((i, idx) => (
             <div key={i.name}>
@@ -172,7 +234,11 @@ export default function Dashboard() {
         </div>
       </SectionCard>
 
-      {consolidated ? <OutletLeaderboard /> : <OutletDetail />}
+      {consolidated ? <OutletLeaderboard onPick={(id) => setViewOutlet(id)} /> : <OutletDetail />}
+
+      <Modal open={!!modal} onClose={() => setModal(null)} title={modal && MODALS[modal].title} subtitle={modal && MODALS[modal].subtitle}>
+        {modal && MODALS[modal].body}
+      </Modal>
     </div>
   )
 }
@@ -203,7 +269,7 @@ function Legend({ data }) {
   )
 }
 
-function OutletLeaderboard() {
+function OutletLeaderboard({ onPick }) {
   const rows = outlets.filter((o) => !o.isHQ).map((o) => {
     const v = allVehicles.filter((x) => x.outletId === o.id)
     const s = allSales.filter((x) => x.outletId === o.id)
@@ -216,18 +282,19 @@ function OutletLeaderboard() {
   }).sort((a, b) => b.revenue - a.revenue)
 
   return (
-    <SectionCard title="Outlet performance" action={<Link to="/settings" className="text-sm font-semibold text-brand-600">Manage outlets →</Link>}>
+    <SectionCard title="Outlet performance" action={<span className="text-xs text-ink-400">click a row to drill in →</span>}>
       <Table
-        columns={['Outlet', 'Partner', 'In stock', 'Units sold', 'Revenue', 'Share %']}
+        columns={['Outlet', 'Partner', 'In stock', 'Units sold', 'Revenue', 'Share %', '']}
         rows={rows}
         renderRow={(o) => (
-          <tr key={o.id} className="hover:bg-ink-50">
+          <tr key={o.id} className="hover:bg-ink-50 cursor-pointer" onClick={() => onPick(o.id)}>
             <td className="td font-semibold text-ink-800">{o.name}<div className="text-xs font-normal text-ink-400">{o.city}</div></td>
             <td className="td">{o.partner}</td>
             <td className="td">{o.stock}</td>
             <td className="td">{o.unitsSold}</td>
             <td className="td font-semibold"><Money value={o.revenue} /></td>
             <td className="td"><Badge tone="blue">{o.share}%</Badge></td>
+            <td className="td text-brand-600"><Icon name="chevron" className="w-4 h-4 -rotate-90" /></td>
           </tr>
         )}
       />

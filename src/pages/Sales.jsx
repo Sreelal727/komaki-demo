@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import { outlets, komakiModels, accessories as allAcc, compliments as allComp, money } from '../data/db.js'
-import { PageHeader, Table, Money, Icon, Stat, Badge, SectionCard } from '../components/ui.jsx'
+import { PageHeader, Table, Money, Icon, Stat, Badge, SectionCard, Drawer, Field } from '../components/ui.jsx'
 
 export default function Sales() {
   const { sales, hq, scope, user } = useStore()
   const [rows, setRows] = useState(sales)
   const [billing, setBilling] = useState(false)
   const [closure, setClosure] = useState(false)
+  const [sel, setSel] = useState(null)
   const showOutlet = hq && scope === 'ALL'
 
   const list = [...rows].sort((a, b) => b.date.localeCompare(a.date))
@@ -30,10 +31,10 @@ export default function Sales() {
       </div>
 
       <Table
-        columns={['Invoice', showOutlet ? 'Outlet' : 'Date', 'Customer', 'Model', 'Vehicle', 'Add-ons', 'Free gift', 'Total']}
+        columns={['Invoice', showOutlet ? 'Outlet' : 'Date', 'Customer', 'Model', 'Vehicle', 'Add-ons', 'Free gift', 'Total', '']}
         rows={list.slice(0, 30)}
         renderRow={(s) => (
-          <tr key={s.id} className="hover:bg-ink-50">
+          <tr key={s.id} className="hover:bg-ink-50 cursor-pointer" onClick={() => setSel(s)}>
             <td className="td font-semibold text-ink-800">{s.id}</td>
             <td className="td">{showOutlet ? outlets.find(o => o.id === s.outletId)?.short : s.date}</td>
             <td className="td">{s.customer}</td>
@@ -42,9 +43,36 @@ export default function Sales() {
             <td className="td">{s.accAmt ? <Money value={s.accAmt} /> : <span className="text-ink-300">—</span>}</td>
             <td className="td"><Badge tone="violet">{s.compliment}</Badge></td>
             <td className="td font-semibold"><Money value={s.total} /></td>
+            <td className="td text-brand-600"><Icon name="chevron" className="w-4 h-4 -rotate-90" /></td>
           </tr>
         )}
       />
+
+      <Drawer open={!!sel} onClose={() => setSel(null)} title={sel && `Invoice ${sel.id}`} subtitle={sel && `${sel.date} · ${outlets.find(o => o.id === sel.outletId)?.name}`}>
+        {sel && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Customer" value={sel.customer} />
+              <Field label="Sold by" value={sel.staff} />
+              <Field label="Model" value={`${sel.model} · ${sel.color}`} />
+              <Field label="Date" value={sel.date} />
+            </div>
+            <div className="rounded-xl border border-ink-100 divide-y divide-ink-100">
+              <Row k={`${sel.model} · ${sel.color}`} v={sel.vehicleAmt} />
+              <Row k="Accessories" v={sel.accAmt} />
+              <Row k="Complimentary gift" note={sel.compliment} v={0} />
+              <div className="flex items-center justify-between px-4 py-3 bg-ink-50 rounded-b-xl">
+                <span className="font-bold text-ink-800">Invoice total</span>
+                <span className="text-xl font-extrabold text-ink-900">{money(sel.total)}</span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button className="btn-primary flex-1"><Icon name="receipt" className="w-4 h-4" /> Print invoice</button>
+              <button className="btn-outline"><Icon name="box" className="w-4 h-4" /> Warranty</button>
+            </div>
+          </div>
+        )}
+      </Drawer>
 
       {billing && <NewSale onClose={() => setBilling(false)} outletId={hq ? (scope === 'ALL' ? 'CLT' : scope) : user.outletId}
         onSave={(sale) => { setRows([sale, ...rows]); setBilling(false) }} />}

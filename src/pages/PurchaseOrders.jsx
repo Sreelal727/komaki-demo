@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { purchaseOrders, vendors, outlets, komakiModels, money } from '../data/db.js'
 import { useStore } from '../lib/store.jsx'
-import { PageHeader, Table, StatusBadge, Icon, Stat, Badge } from '../components/ui.jsx'
+import { PageHeader, Table, StatusBadge, Icon, Stat, Badge, Drawer, Field } from '../components/ui.jsx'
 
 export default function PurchaseOrders() {
   const { hq, scope } = useStore()
   const [creating, setCreating] = useState(false)
+  const [sel, setSel] = useState(null)
   const [pos, setPos] = useState(purchaseOrders)
 
   const rows = hq ? pos.filter((p) => scope === 'ALL' || p.outletId === scope) : pos.filter((p) => p.outletId === scope)
@@ -24,13 +25,13 @@ export default function PurchaseOrders() {
       </div>
 
       <Table
-        columns={['PO #', 'Vendor', 'Destination', 'Date', 'ETA', 'Items', 'Value', 'Status']}
+        columns={['PO #', 'Vendor', 'Destination', 'Date', 'ETA', 'Items', 'Value', 'Status', '']}
         rows={rows}
         renderRow={(p) => {
           const vendor = vendors.find((v) => v.id === p.vendorId)
           const dest = outlets.find((o) => o.id === p.outletId)
           return (
-            <tr key={p.id} className="hover:bg-ink-50">
+            <tr key={p.id} className="hover:bg-ink-50 cursor-pointer" onClick={() => setSel(p)}>
               <td className="td font-semibold text-ink-800">{p.id}</td>
               <td className="td">{vendor?.name}</td>
               <td className="td">{dest?.short}</td>
@@ -39,12 +40,64 @@ export default function PurchaseOrders() {
               <td className="td text-ink-500">{p.lines.map(l => `${l.item} ×${l.qty}`).join(', ')}</td>
               <td className="td font-semibold">{money(p.total)}</td>
               <td className="td"><StatusBadge status={p.status} /></td>
+              <td className="td text-brand-600"><Icon name="chevron" className="w-4 h-4 -rotate-90" /></td>
             </tr>
           )
         }}
       />
 
+      <Drawer open={!!sel} onClose={() => setSel(null)} title={sel && `Purchase Order ${sel.id}`} subtitle={sel && vendors.find(v => v.id === sel.vendorId)?.name}>
+        {sel && <PODetail p={sel} />}
+      </Drawer>
+
       {creating && <NewPO onClose={() => setCreating(false)} onSave={(po) => { setPos([po, ...pos]); setCreating(false) }} scope={hq ? (scope === 'ALL' ? 'HQ' : scope) : scope} />}
+    </div>
+  )
+}
+
+function PODetail({ p }) {
+  const vendor = vendors.find((v) => v.id === p.vendorId)
+  const steps = ['Draft', 'Pending Approval', 'Approved', 'In Transit', 'Received']
+  const stepIdx = steps.indexOf(p.status)
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <StatusBadge status={p.status} />
+        <span className="text-2xl font-extrabold text-ink-900">{money(p.total)}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Vendor" value={vendor?.name} />
+        <Field label="Destination" value={outlets.find((o) => o.id === p.outletId)?.name} />
+        <Field label="Order date" value={p.date} />
+        <Field label="Expected" value={p.eta} />
+        <Field label="Payment terms" value={vendor?.terms} />
+        <Field label="Lead time" value={vendor ? vendor.leadDays + ' days' : '—'} />
+      </div>
+      <div>
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-400 mb-2">Line items</div>
+        <div className="rounded-xl border border-ink-100 divide-y divide-ink-100">
+          {p.lines.map((l, i) => (
+            <div key={i} className="flex items-center justify-between px-4 py-2.5 text-sm">
+              <span className="text-ink-700">{l.item} <span className="text-ink-400">× {l.qty}</span></span>
+              <span className="font-semibold">{money(l.qty * l.rate)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-400 mb-2">Progress</div>
+        <div className="flex items-center gap-1">
+          {steps.map((s, i) => (
+            <div key={s} className="flex-1">
+              <div className={`h-1.5 rounded-full ${i <= stepIdx ? 'bg-brand-500' : 'bg-ink-100'}`} />
+              <div className={`text-[10px] mt-1 ${i <= stepIdx ? 'text-brand-600 font-semibold' : 'text-ink-300'}`}>{s}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {(p.status === 'Draft' || p.status === 'Pending Approval') && (
+        <button className="btn-primary w-full"><Icon name="check" className="w-4 h-4" /> Approve & dispatch</button>
+      )}
     </div>
   )
 }

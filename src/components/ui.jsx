@@ -68,9 +68,12 @@ export function StatusBadge({ status }) {
   return <Badge tone={map[status] || 'gray'}>{status}</Badge>
 }
 
-export function Stat({ icon, label, value, sub, tone = 'blue', trend }) {
+export function Stat({ icon, label, value, sub, tone = 'blue', trend, onClick }) {
+  const clickable = !!onClick
   return (
-    <div className="card p-5">
+    <div onClick={onClick} role={clickable ? 'button' : undefined}
+      className={`card p-5 group relative ${clickable ? 'cursor-pointer transition hover:shadow-md hover:-translate-y-0.5 hover:border-brand-200' : ''}`}>
+      {clickable && <Icon name="chevron" className="w-4 h-4 -rotate-90 text-ink-300 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition" />}
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-ink-500">{label}</p>
@@ -84,6 +87,7 @@ export function Stat({ icon, label, value, sub, tone = 'blue', trend }) {
           <Icon name="arrowUp" className="w-3.5 h-3.5" /> {trend}
         </div>
       )}
+      {clickable && <div className="mt-3 text-xs font-semibold text-brand-600 opacity-0 group-hover:opacity-100 transition">View details →</div>}
     </div>
   )
 }
@@ -111,16 +115,88 @@ export function Money({ value, className = '' }) {
   return <span className={`tabular-nums ${className}`}>₹{Number(value || 0).toLocaleString('en-IN')}</span>
 }
 
-export function SectionCard({ title, action, children, className = '' }) {
+export function SectionCard({ title, action, children, className = '', onClick }) {
+  const clickable = !!onClick
   return (
-    <div className={`card p-5 ${className}`}>
+    <div onClick={onClick} className={`card p-5 group ${clickable ? 'cursor-pointer transition hover:shadow-md hover:border-brand-200' : ''} ${className}`}>
       {(title || action) && (
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-ink-800">{title}</h3>
+          <h3 className="font-bold text-ink-800 flex items-center gap-1.5">{title}
+            {clickable && <Icon name="chevron" className="w-4 h-4 -rotate-90 text-ink-300 opacity-0 group-hover:opacity-100 transition" />}</h3>
           {action}
         </div>
       )}
       {children}
+    </div>
+  )
+}
+
+// Right slide-over used for record detail across the app.
+export function Drawer({ open, onClose, title, subtitle, children, footer, width = 'max-w-md' }) {
+  if (!open) return null
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
+      <div className={`fixed right-0 inset-y-0 w-full ${width} bg-white z-50 shadow-2xl flex flex-col`}>
+        <div className="h-16 shrink-0 flex items-center justify-between px-6 border-b border-ink-100">
+          <div>
+            <h3 className="font-bold text-ink-900 leading-tight">{title}</h3>
+            {subtitle && <p className="text-xs text-ink-400">{subtitle}</p>}
+          </div>
+          <button className="btn-ghost -mr-2" onClick={onClose}><Icon name="logout" /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6">{children}</div>
+        {footer && <div className="shrink-0 border-t border-ink-100 p-4">{footer}</div>}
+      </div>
+    </>
+  )
+}
+
+// Centered modal used for KPI breakdowns.
+export function Modal({ open, onClose, title, subtitle, children, width = 'max-w-xl' }) {
+  if (!open) return null
+  return (
+    <div className="fixed inset-0 bg-black/40 z-40 grid place-items-center p-4" onClick={onClose}>
+      <div className={`w-full ${width} bg-white rounded-2xl shadow-2xl max-h-[85vh] flex flex-col`} onClick={(e) => e.stopPropagation()}>
+        <div className="h-16 shrink-0 flex items-center justify-between px-6 border-b border-ink-100">
+          <div>
+            <h3 className="font-bold text-ink-900 leading-tight">{title}</h3>
+            {subtitle && <p className="text-xs text-ink-400">{subtitle}</p>}
+          </div>
+          <button className="btn-ghost -mr-2" onClick={onClose}><Icon name="logout" /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+// Label/value pair used inside drawers & modals.
+export function Field({ label, value, mono }) {
+  return (
+    <div>
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-400">{label}</div>
+      <div className={`text-sm text-ink-800 mt-0.5 ${mono ? 'font-mono' : 'font-medium'}`}>{value ?? '—'}</div>
+    </div>
+  )
+}
+
+// Simple breakdown list for KPI modals.
+export function Breakdown({ items }) {
+  const max = Math.max(...items.map((i) => i.value || 0), 1)
+  return (
+    <div className="space-y-3">
+      {items.map((it, i) => (
+        <div key={i}>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="font-medium text-ink-700">{it.label}</span>
+            <span className="font-semibold text-ink-900">{it.display ?? it.value}</span>
+          </div>
+          <div className="h-2 rounded-full bg-ink-100 overflow-hidden">
+            <div className="h-full rounded-full bg-brand-500" style={{ width: `${((it.value || 0) / max) * 100}%` }} />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
