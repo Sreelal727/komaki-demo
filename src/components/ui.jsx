@@ -27,6 +27,9 @@ export function Icon({ name, className = 'w-5 h-5' }) {
     lock: <><rect x="4" y="11" width="16" height="10" rx="2" {...p} /><path d="M8 11V7a4 4 0 018 0v4" {...p} /></>,
     alert: <><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L14.7 3.9a2 2 0 00-3.4 0z" {...p} /></>,
     battery: <><rect x="2" y="8" width="16" height="9" rx="2" {...p} /><path d="M20 11v3" {...p} /><rect x="4" y="10" width="8" height="5" rx="0.5" fill="currentColor" stroke="none" /></>,
+    sparkle: <><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" {...p} /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" {...p} /></>,
+    send: <><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" {...p} /></>,
+    bulb: <><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0012 2z" {...p} /></>,
   }
   return <svg viewBox="0 0 24 24" className={className} aria-hidden>{paths[name] || null}</svg>
 }

@@ -6,6 +6,7 @@ import { Icon } from './ui.jsx'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: 'dashboard', roles: 'all' },
+  { to: '/saiga', label: 'Saiga Intelligence', icon: 'sparkle', roles: 'all', accent: true },
   { section: 'Inventory' },
   { to: '/vehicles', label: 'Vehicles', icon: 'scooter', roles: 'all' },
   { to: '/spares', label: 'Spare Parts', icon: 'wrench', roles: 'all' },
@@ -50,9 +51,10 @@ function Sidebar({ open, onClose }) {
             if (!allowed(item, user.role)) return null
             return (
               <NavLink key={item.to} to={item.to} onClick={onClose} end={item.to === '/'}
-                className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-brand-600 text-white' : 'text-ink-300 hover:bg-white/5 hover:text-white'}`}>
+                className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-brand-600 text-white' : item.accent ? 'text-violet-200 bg-violet-500/10 hover:bg-violet-500/20' : 'text-ink-300 hover:bg-white/5 hover:text-white'}`}>
                 <Icon name={item.icon} className="w-[18px] h-[18px]" />
                 {item.label}
+                {item.accent && <span className="ml-auto chip bg-violet-500/25 text-violet-100 text-[9px] px-1.5 py-0.5">AI</span>}
               </NavLink>
             )
           })}

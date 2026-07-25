@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import Saiga from './pages/Saiga.jsx'
 import Vehicles from './pages/Vehicles.jsx'
 import Spares from './pages/Spares.jsx'
 import Accessories from './pages/Accessories.jsx'
@@ -21,6 +22,7 @@ export default function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/saiga" element={<Saiga />} />
         <Route path="/vehicles" element={<Vehicles />} />
         <Route path="/spares" element={<Spares />} />
         <Route path="/accessories" element={<Accessories />} />
