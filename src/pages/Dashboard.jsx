@@ -9,7 +9,8 @@ import { monthlyTrend, purchaseOrders, outlets, vehicles as allVehicles, sales a
 import { PageHeader, Stat, SectionCard, Table, StatusBadge, Money, Icon, Badge } from '../components/ui.jsx'
 import { SaigaMark } from './Saiga.jsx'
 
-const BRAND = ['#1f39db', '#597dff', '#8eabff', '#bccfff', '#3355f5', '#1a2db0', '#c4b5fd', '#a78bfa']
+// Vibrant categorical palette — distinct hues, readable on white.
+const BRAND = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4', '#8b5cf6', '#fb923c', '#14b8a6']
 const tip = { contentStyle: { borderRadius: 12, border: '1px solid #eceef2', fontSize: 13 } }
 
 export default function Dashboard() {
@@ -112,16 +113,16 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={monthlyTrend} margin={{ left: -18, right: 8, top: 8 }}>
               <defs>
-                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#1f39db" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="#1f39db" stopOpacity={0} />
+                <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.03} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#eceef2" />
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#8590a8' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12, fill: '#8590a8' }} axisLine={false} tickLine={false} />
               <Tooltip {...tip} />
-              <Area type="monotone" dataKey="units" stroke="#1f39db" strokeWidth={2.5} fill="url(#g1)" name="Units sold" />
+              <Area type="monotone" dataKey="units" stroke="#6366f1" strokeWidth={2.5} fill="url(#g1)" name="Units sold" />
             </AreaChart>
           </ResponsiveContainer>
         </SectionCard>

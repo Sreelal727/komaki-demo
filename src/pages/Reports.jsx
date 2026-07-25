@@ -4,7 +4,7 @@ import { useStore } from '../lib/store.jsx'
 import { outlets, komakiModels, money } from '../data/db.js'
 import { PageHeader, Stat, SectionCard, Icon, Money, Table } from '../components/ui.jsx'
 
-const BRAND = ['#1f39db', '#597dff', '#8eabff', '#3355f5', '#1a2db0', '#bccfff']
+const BRAND = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4', '#8b5cf6', '#fb923c', '#14b8a6']
 
 export default function Reports() {
   const { sales, expenses, hq, scope } = useStore()

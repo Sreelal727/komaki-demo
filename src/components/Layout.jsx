@@ -145,7 +145,7 @@ export default function Layout({ children }) {
             <RoleSwitcher />
           </div>
         </header>
-        <main key={loc.pathname} className="flex-1 overflow-y-auto p-4 lg:p-8 bg-ink-50">
+        <main key={loc.pathname} className="flex-1 overflow-y-auto p-4 lg:p-8 doodle-bg">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
