@@ -39,7 +39,7 @@ export const ROLES = {
   EMPLOYEE: 'Employee',
 }
 export const users = [
-  { id: 'u-owner', name: 'Vishnu Prasad', role: ROLES.SUPER_ADMIN, outletId: 'HQ',  title: 'Managing Director, Lestova', avatar: 'VP' },
+  { id: 'u-owner', name: 'Kareem', role: ROLES.SUPER_ADMIN, outletId: 'HQ',  title: 'Managing Director, Lestova', avatar: 'K' },
   { id: 'u-admin', name: 'Meera Suresh',  role: ROLES.ADMIN,       outletId: 'HQ',  title: 'Operations Manager (HQ)',   avatar: 'MS' },
   { id: 'u-clt',   name: 'Rahul Menon',   role: ROLES.FRANCHISE,   outletId: 'CLT', title: 'Partner — Calicut',         avatar: 'RM' },
   { id: 'u-koc',   name: 'Anitha Nair',   role: ROLES.FRANCHISE,   outletId: 'KOC', title: 'Partner — Kochi',           avatar: 'AN' },

@@ -36,7 +36,7 @@ npm run build && npm run preview
    sister outlet.
 3. **Sales & Billing → New sale**: bundle a scooter + accessories + a free gift, then run
    **Daily closure** (pushes to HQ).
-4. Switch to **Vishnu Prasad — Super Admin**: the **HQ Command Center** now shows the
+4. Switch to **Kareem — Super Admin**: the **HQ Command Center** now shows the
    consolidated roll-up; raise a **Purchase Order** to a vendor for low stock.
 5. Approve a **Stock Transfer** between outlets.
 6. Open **Profit Sharing** — the quarterly revenue/expense split per partnership contract %.
